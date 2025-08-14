@@ -1,0 +1,142 @@
+-- 🃏 Joker Assembly Injector
+-- Multi-Choice Menu Version
+
+gg.toast("🃏 Joker Assembly Injector Loaded")
+
+-- ================================
+-- Library + Memory Setup
+-- ================================
+local libNameSo = "libil2cpp.so"
+X_X = {}
+UwU = 0
+LibraryStatus = 0
+
+local info = gg.getTargetInfo()
+if not info then
+    gg.alert("❌ No target process selected.")
+    os.exit()
+end
+
+local ranges = gg.getRangesList(libNameSo)
+if not ranges or #ranges == 0 then
+    gg.alert("❌ Library not found: " .. libNameSo)
+    os.exit()
+else
+    for i, v in ipairs(ranges) do
+        if v.state == "Xa" then
+            UwU = i
+            X_X[i] = v.start
+            LibraryStatus = 1
+        end
+    end
+end
+
+if LibraryStatus == 0 then
+    gg.alert("❌ Executable section of lib not found.")
+    os.exit()
+end
+
+-- ================================
+-- Your Inject Engine (UNTOUCHED)
+-- ================================
+local function injectAssembly(offset, value)
+    local addr = X_X[UwU] + offset
+
+     ---bool
+    if value == true then
+        gg.setValues({
+            {address = addr, flags = 4, value = "~A MOV R0, #1"},
+            {address = addr + 0x4, flags = 4, value = "~A BX LR"}
+        })
+
+    elseif value == false then
+        gg.setValues({
+            {address = addr, flags = 4, value = "~A MOV R0, #0"},
+            {address = addr + 0x4, flags = 4, value = "~A BX LR"}
+        })
+
+    elseif type(value) == "number" and value >= 0 and value <= 999999999 then
+        if math.floor(value) == value then
+            -- Int
+            if value <= 0xFF then
+                gg.setValues({
+                    {address = addr, flags = 4, value = string.format("~A MOV R0, #%d", value)},
+                    {address = addr + 0x4, flags = 4, value = "~A BX LR"}
+                })
+            elseif value <= 0xFFFF then
+                gg.setValues({
+                    {address = addr, flags = 4, value = string.format("~A MOVW R0, #%d", value)},
+                    {address = addr + 0x4, flags = 4, value = "~A BX LR"}
+                })
+            else
+                local lower16 = value & 0xFFFF
+                local upper16 = (value >> 16) & 0xFFFF
+                gg.setValues({
+                    {address = addr, flags = 4, value = string.format("~A MOVW R0, #%d", lower16)},
+                    {address = addr + 0x4, flags = 4, value = string.format("~A MOVT R0, #%d", upper16)},
+                    {address = addr + 0x8, flags = 4, value = "~A BX LR"}
+                })
+            end
+        else
+            -- Float
+            local packed = string.pack("<f", value)
+            local floatBits = string.unpack("<I4", packed)
+            local lower16 = floatBits & 0xFFFF
+            local upper16 = (floatBits >> 16) & 0xFFFF
+            gg.setValues({
+                {address = addr, flags = 4, value = string.format("~A MOVW R0, #%d", lower16)},
+                {address = addr + 0x4, flags = 4, value = string.format("~A MOVT R0, #%d", upper16)},
+                {address = addr + 0x8, flags = 4, value = "~A VMOV S0, R0"},
+                {address = addr + 0xC, flags = 4, value = "~A BX LR"}
+            })
+        end
+    else
+        gg.alert("❌ Invalid value.\nMust be boolean, integer, or float (0 to 999,999,999.0)")
+    end
+end
+
+-- ================================
+-- Example Cheats (offset + value)
+-- ================================
+local cheats = {
+    {name = "🔥 INFINITE Energy", offset = 0x130DCBC, value = 999999}, -- int
+    {name = "💥 FREE CRAFT", offset = 0x14F853C, value = 9999999}, -- bool
+    {name = "💥 MAX LEVEL", offset = 0x1484880, value = 9999999}, -- float
+    {name = "💥 FREE SHOPING", offset = 0x15AC700, value = true}, -- int
+}
+
+-- ================================
+-- Multi-Choice Menu
+-- ================================
+function mainMenu()
+    local names = {}
+    for i, v in ipairs(cheats) do
+        table.insert(names, v.name)
+    end
+    table.insert(names, "❌ Exit")
+
+    local choice = gg.multiChoice(names, nil, "Script By - 💥 MEGAN 💥\nRaft Survival Ocean -Nomad\n\n Select cheats to apply")
+
+    if not choice then return end
+
+    for i, v in ipairs(cheats) do
+        if choice[i] then
+            injectAssembly(v.offset, v.value)
+            gg.toast("✅ Applied: " .. v.name)
+        end
+    end
+
+    if choice[#names] then
+        os.exit()
+    end
+end
+
+-- ================================
+-- Main Loop
+-- ================================
+while true do
+    if gg.isVisible(true) then
+        gg.setVisible(false)
+        mainMenu()
+    end
+end
