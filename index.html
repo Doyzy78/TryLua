@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Mod</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h2>Upload Mod</h2>
+        <form id="uploadForm" action="upload.php" method="POST" enctype="multipart/form-data">
+            <input type="text" name="title" placeholder="Mod Title" required>
+            <textarea name="description" placeholder="Mod Description" rows="3" required></textarea>
+            <textarea name="features" placeholder="Mod Features" rows="4" required></textarea>
+            <input type="url" name="download_link" placeholder="Download Link" required>
+            <input type="url" name="youtube_link" placeholder="YouTube Link (optional)">
+            <label>Upload Mod Image:</label>
+            <input type="file" name="mod_image" accept="image/*" required>
+            <button type="submit">Submit</button>
+        </form>
+        <div class="view-link">
+            <a href="display.php">View Uploaded Mods</a>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
